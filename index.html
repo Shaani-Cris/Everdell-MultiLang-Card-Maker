@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Everdell Multi‑Lang Card Maker</title>
+  <!-- Polices du site -->
   <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=IM+Fell+DW+Pica:ital@0;1&display=swap" rel="stylesheet">
   <style>
     /* --- Layout --------------------------------------------------------- */
@@ -81,6 +82,230 @@
   </style>
 </head>
 <body>
-  <!-- Le reste du code (formulaires, scripts, gestion du gras, 0 berry et 0 prosperity, occurrences de carte) reste identique à la version précédente -->
+  <div class="app">
+    <div class="left">
+      <h1>Everdell Multi‑Lang Card Maker</h1>
+      <p class="hint">Champs principaux. Le rendu met à jour en direct (y compris le <b>gras</b> dans « Power »).</p>
+
+      <fieldset>
+        <legend>Card</legend>
+        <label>Titre
+          <input id="fTitle" type="text" placeholder="Ex: CRAPAUD FACTEUR" value="CRAPAUD FACTEUR" />
+        </label>
+        <div class="row">
+          <label>Type (libre)
+            <input id="fType" type="text" placeholder="Ex: Créature commune" value="Créature unique" />
+          </label>
+          <label>Copies (1–4)
+            <input id="fCopies" type="number" min="1" max="4" step="1" value="1" />
+          </label>
+        </div>
+        <div class="row">
+          <label>Points
+            <input id="fPoints" type="number" min="0" max="9" step="1" value="2" />
+          </label>
+          <label>Prosperity (peut être 0)
+            <input id="fProsp" type="number" min="0" max="9" step="1" value="1" />
+          </label>
+        </div>
+        <div class="row">
+          <label>Coût (« baies ») — 0 autorisé
+            <input id="fBerries" type="number" min="0" max="9" step="1" value="3" />
+          </label>
+          <label>Image de fond
+            <input id="fBg" type="file" accept="image/*" />
+          </label>
+        </div>
+        <label>Power / Règles (supporte **gras** ou [b]gras[/b])
+          <textarea id="fRules">Gagnez **1 baie** si vous jouez une **Construction**.</textarea>
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Position de l’image</legend>
+        <div class="row">
+          <label>Décalage X (px)
+            <input id="fX" type="number" step="1" value="0" />
+          </label>
+          <label>Décalage Y (px)
+            <input id="fY" type="number" step="1" value="0" />
+          </label>
+        </div>
+        <label>Zoom
+          <input id="fS" type="number" step="0.01" min="0.1" max="4" value="1" />
+        </label>
+        <div style="margin-top:10px; display:flex; gap:10px;">
+          <button class="btn" id="btnReset">Réinitialiser image</button>
+          <button class="btn" id="btnSave">Télécharger PNG</button>
+        </div>
+      </fieldset>
+
+      <p class="hint">Astuce : entrez 0 en « baies » pour les Créatures uniques à coût gratuit (affichage « 0 🍓 »). Entrez 0 en « Prosperity » si la carte de prospérité ne rapporte rien.</p>
+    </div>
+
+    <div class="right">
+      <div class="stage-wrap">
+        <div class="stage" id="stage">
+          <img id="bg" class="card-bg" alt="background" />
+
+          <!-- Overlays / badges -->
+          <img id="badgeCopies" class="overlay occurrence" alt="copies" />
+
+          <!-- Text zones -->
+          <div id="tTitle" class="title">CRAPAUD FACTEUR</div>
+          <div id="tType"  class="type">Créature unique</div>
+          <div id="tRules" class="rules"></div>
+
+          <!-- Cost & points -->
+          <div class="cost" id="cost">
+            <img class="icon" src="frog.png" alt="berry" />
+            <span id="vCost">0</span>
+          </div>
+          <div class="points" id="points">
+            <img class="icon" src="paw.png" alt="points" />
+            <span id="vPoints">2</span>
+          </div>
+          <div class="prosp" id="prosp">
+            <img class="icon" src="playnote.png" alt="prosperity" />
+            <span id="vProsp">1</span>
+          </div>
+
+          <div class="watermark">Everdell — rendu simplifié pour génération PNG</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Utilities --------------------------------------------------------
+    const $ = sel => document.querySelector(sel);
+
+    function parseRich(text) {
+      if (!text) return "";
+      // Fix: garder le gras à l'endroit où il est tapé
+      // Supporte **bold** et [b]bold[/b]
+      let html = text
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1<\/strong>')
+        .replace(/\[b\](.+?)\[\/b\]/gi, '<strong>$1<\/strong>')
+        .replace(/\n/g, '<br>');
+      return html;
+    }
+
+    function setCopiesBadge(n) {
+      const badge = $('#badgeCopies');
+      if (!badge) return;
+      const nInt = Math.max(1, Math.min(4, parseInt(n||1,10)));
+      if (nInt === 1) { badge.src = ''; badge.style.display='none'; return; }
+      if (nInt === 4) badge.src = 'four.png';
+      else if (nInt === 3) badge.src = 'three.png';
+      else if (nInt === 2) badge.src = 'chain.png';
+      badge.style.display = 'block';
+    }
+
+    function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+    // --- State bindings ---------------------------------------------------
+    const fTitle = $('#fTitle');
+    const fType  = $('#fType');
+    const fRules = $('#fRules');
+    const fCopies= $('#fCopies');
+    const fPoints= $('#fPoints');
+    const fProsp = $('#fProsp');
+    const fBerries=$('#fBerries');
+    const fBg    = $('#fBg');
+    const fX = $('#fX');
+    const fY = $('#fY');
+    const fS = $('#fS');
+
+    const tTitle = $('#tTitle');
+    const tType  = $('#tType');
+    const tRules = $('#tRules');
+
+    const vCost = $('#vCost');
+    const vPoints = $('#vPoints');
+    const vProsp = $('#vProsp');
+
+    const costBox = $('#cost');
+    const pointsBox = $('#points');
+    const prospBox = $('#prosp');
+
+    const bg = $('#bg');
+    const stage = $('#stage');
+
+    function nudgePreviewIntoView() {
+      stage.scrollIntoView({ behavior: 'instant', block: 'center' });
+    }
+
+    function update() {
+      tTitle.textContent = fTitle.value || '';
+      tType.textContent  = fType.value  || '';
+      tRules.innerHTML   = parseRich(fRules.value);
+
+      const berries = clamp(parseInt(fBerries.value||0,10), 0, 99);
+      vCost.textContent = String(berries); // afficher 0 si 0
+      costBox.style.display = 'flex';
+
+      const pts = clamp(parseInt(fPoints.value||0,10), 0, 99);
+      vPoints.textContent = String(pts); // autoriser 0
+      pointsBox.style.display = 'flex';
+
+      const prosp = clamp(parseInt(fProsp.value||0,10), 0, 99);
+      vProsp.textContent = String(prosp); // autoriser 0
+      prospBox.style.display = 'flex';
+
+      setCopiesBadge(fCopies.value);
+
+      // transform de l'image
+      const x = parseFloat(fX.value||0), y = parseFloat(fY.value||0), s = parseFloat(fS.value||1);
+      stage.style.setProperty('--imgX', x + 'px');
+      stage.style.setProperty('--imgY', y + 'px');
+      stage.style.setProperty('--imgS', s);
+    }
+
+    [fTitle,fType,fRules,fCopies,fPoints,fProsp,fBerries,fX,fY,fS].forEach(el=>{
+      el.addEventListener('input', ()=>{ update(); if (el===fX||el===fY||el===fS) nudgePreviewIntoView(); });
+      el.addEventListener('change', ()=>{ update(); if (el===fX||el===fY||el===fS) nudgePreviewIntoView(); });
+    });
+
+    // Image de fond
+    fBg.addEventListener('change', (e)=>{
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      bg.src = url;
+      update();
+      nudgePreviewIntoView();
+    });
+
+    // Reset image transform
+    $('#btnReset').addEventListener('click', ()=>{ fX.value=0; fY.value=0; fS.value=1; update(); nudgePreviewIntoView(); });
+
+    // Export PNG
+    async function toPng(node) {
+      if (!window.html2canvas) {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+        document.head.appendChild(s);
+        await new Promise(r=>{ s.onload=r; s.onerror=r; setTimeout(r,1500); });
+      }
+      if (!window.html2canvas) throw new Error('html2canvas non chargé');
+      return await window.html2canvas(node, { backgroundColor: null, scale: 2 });
+    }
+
+    $('#btnSave').addEventListener('click', async ()=>{
+      try {
+        const canvas = await toPng(stage);
+        const a = document.createElement('a');
+        a.download = (fTitle.value||'card') + '.png';
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+      } catch (e) {
+        alert('Export PNG indisponible hors-ligne. Réessaie avec connexion ou fais une capture d’écran.');
+      }
+    });
+
+    // Initial
+    update();
+  </script>
 </body>
 </html>
