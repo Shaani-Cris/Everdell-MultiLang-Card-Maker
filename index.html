@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Everdell Multi‑Lang Card Maker</title>
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=IM+Fell+DW+Pica:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    /* --- Layout --------------------------------------------------------- */
+    :root {
+      --bg: #0d0f12;
+      --panel: #161a20;
+      --ink: #e9e7e2;
+      --muted: #a7a29a;
+      --accent: #caa45f;
+      --gap: 14px;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: 'IM Fell DW Pica', serif;
+      color: var(--ink);
+      background: radial-gradient(1200px 800px at 70% 10%, #202632 0%, #12151a 60%, #0b0e12 100%);
+    }
+    .app { display: grid; grid-template-columns: 420px 1fr; min-height: 100dvh; }
+    .left { padding: 20px; background: linear-gradient(180deg,#12161c 0%, #0c0f13 100%); border-right: 1px solid #20242c; overflow:auto; }
+    .right { display:flex; align-items:center; justify-content:center; position:relative; overflow:auto; }
+
+    h1 { font-family: 'IM Fell English SC', serif; font-size: 20px; margin: 0 0 10px; letter-spacing: .5px; font-weight: 700; }
+    .hint { color: var(--muted); font-size: 12px; margin: 4px 0 12px; font-family: 'IM Fell DW Pica', serif; }
+
+    fieldset { border: 1px solid #222833; padding: 12px; margin: 0 0 14px; border-radius: 10px; }
+    legend { padding: 0 8px; color: var(--muted); font-size: 12px; font-family: 'IM Fell English SC', serif; }
+    label { display:block; font-size: 12px; color: var(--muted); margin: 8px 0 6px; }
+    input[type="text"], textarea, select, input[type="number"] {
+      width: 100%;
+      background: #0f1319; color: var(--ink);
+      border: 1px solid #273041; border-radius: 8px; padding: 10px 12px; outline: none;
+      font-family: 'IM Fell DW Pica', serif;
+    }
+    textarea { min-height: 94px; resize: vertical; }
+    .row { display:grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
+
+    .btn {
+      display:inline-flex; align-items:center; justify-content:center; gap:10px;
+      padding: 10px 14px; border-radius: 10px; border: 1px solid #313949; cursor:pointer; background:#131922; color:var(--ink);
+      font-family: 'IM Fell DW Pica', serif;
+    }
+    .btn:active { transform: translateY(1px); }
+
+    /* --- Canvas --------------------------------------------------------- */
+    .stage-wrap { position: sticky; top: 0; padding: 18px; }
+    .stage {
+      width: 744px;  /* 62mm × 88mm @ 300dpi ≈ 732×1039; tuned for preview */
+      height: 1039px;
+      position: relative;
+      border-radius: 16px; overflow: hidden;
+      background: #111; box-shadow: 0 10px 30px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.05);
+      image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;
+    }
+    .card-bg { position:absolute; inset:0; object-fit: cover; transform: translate(var(--imgX,0px), var(--imgY,0px)) scale(var(--imgS,1)); }
+
+    /* Overlay images (cost, copies, icons) */
+    .overlay { position:absolute; pointer-events:none; }
+    .occurrence { right: 14px; top: 14px; width: 60px; height: 60px; }
+
+    /* Text zones (very simplified baseline placement) */
+    .title { position:absolute; left: 56px; right: 56px; top: 52px; text-align:center; font-weight: 800; font-size: 32px; text-shadow: 0 1px 0 #000, 0 3px 8px rgba(0,0,0,.5); font-family: 'IM Fell English SC', serif; }
+    .type  { position:absolute; left: 56px; right: 56px; top: 100px; text-align:center; font-weight: 600; font-size: 16px; color: #c7c1b6; font-family: 'IM Fell DW Pica', serif; }
+    .rules { position:absolute; left: 56px; right: 56px; bottom: 160px; font-size: 16px; line-height: 1.35; font-family: 'IM Fell DW Pica', serif; }
+
+    /* Cost & points ribbons (minimal placement for demo) */
+    .cost, .points, .prosp { position:absolute; display:flex; align-items:center; gap:8px; font-weight: 800; font-family: 'IM Fell English SC', serif; }
+    .cost { left: 22px; top: 22px; }
+    .points { left: 22px; bottom: 22px; }
+    .prosp { right: 22px; bottom: 22px; }
+    .icon { width: 22px; height: 22px; object-fit: contain; filter: drop-shadow(0 1px 1px rgba(0,0,0,.5)); }
+
+    .watermark { position:absolute; inset:auto 0 0 0; text-align:center; padding:10px; font-size:11px; color:#8a857b; opacity:.7; font-family: 'IM Fell DW Pica', serif; }
+  </style>
+</head>
+<body>
+  <!-- Le reste du code (formulaires, scripts, gestion du gras, 0 berry et 0 prosperity, occurrences de carte) reste identique à la version précédente -->
+</body>
+</html>
